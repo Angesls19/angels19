@@ -1,0 +1,583 @@
+<!DOCTYPE html>
+<html lang="lv">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JT MOTORS | Premium Auto Rezerves Daļas</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.17.1/firebase-database-compat.js"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <style>        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap');
+        :root { --jt-yellow: #fbbf24; --jt-dark: #0f172a; --jt-darker: #020617; --jt-page-bg: #f1f5f9; }
+        body { font-family: 'Plus Jakarta Sans', sans-serif; background-color: var(--jt-page-bg); color: #1e293b; overflow-x: hidden; }
+        .page-wrapper { display: flex; min-height: 100vh; }
+        .sidebar { width: 260px; background: white; border-right: 1px solid #e2e8f0; flex-shrink: 0; display: flex; flex-direction: column; position: sticky; top: 0; height: 100vh; overflow-y: auto; z-index: 30; }
+        .sidebar-header { padding: 20px; border-bottom: 1px solid #e2e8f0; }
+        .sidebar-menu { padding: 10px 0; flex-grow: 1; }
+        .cat-item { display: flex; align-items: center; gap: 12px; padding: 12px 20px; color: #475569; font-size: 13px; font-weight: 500; transition: all 0.2s; cursor: pointer; border-left: 3px solid transparent; }
+        .cat-item:hover { background-color: #f8fafc; color: #0f172a; }
+        .cat-item.active { background-color: #f0f9ff; color: #0284c7; border-left-color: #0284c7; font-weight: 600; }
+        .cat-item i { width: 20px; text-align: center; font-size: 16px; color: #94a3b8; transition: color 0.2s; }
+        .cat-item:hover i, .cat-item.active i { color: #0284c7; }
+        .cat-item .arrow { margin-left: auto; font-size: 11px; color: #cbd5e1; }
+        .sub-cat-list { background-color: #f8fafc; padding-left: 32px; display: none; border-bottom: 1px solid #e2e8f0; }
+        .sub-cat-list.open { display: block; animation: slideDown 0.3s ease; }
+        .sub-cat-item { display: flex; align-items: center; gap: 8px; padding: 8px 20px 8px 10px; color: #64748b; font-size: 12px; transition: all 0.2s; cursor: pointer; }
+        .sub-cat-item:hover { color: #0f172a; }
+        .sub-cat-item.active { color: #0284c7; font-weight: 600; }
+        .sub-cat-item i { font-size: 14px; color: #cbd5e1; width: 16px; text-align: center;}
+        .main-content { flex-grow: 1; display: flex; flex-direction: column; }
+        .main-header { background: white; border-bottom: 1px solid #e2e8f0; position: sticky; top: 0; z-index: 20; padding: 0 30px; height: 80px; display: flex; align-items: center; gap: 20px; }
+        .search-wrapper { flex-grow: 1; max-width: 600px; position: relative; }
+        .search-input { width: 100%; background: #f1f5f9; border: 1px solid #e2e8f0; border-radius: 9999px; padding: 0.75rem 3rem; outline: none; transition: all 0.2s; font-size: 0.875rem; }
+        .search-input:focus { border-color: #0284c7; background: white; box-shadow: 0 0 0 3px rgba(2, 132, 199, 0.1); }
+        .search-icon { position: absolute; left: 16px; top: 50%; transform: translateY(-50%); color: #94a3b8; }
+        .product-area { padding: 30px; flex-grow: 1; }
+        .item-card { background: white; border-radius: 16px; padding: 20px; border: 1px solid #e2e8f0; transition: all 0.3s ease; cursor: pointer; display: flex; flex-direction: column; height: 100%; }
+        .item-card:hover { border-color: #cbd5e1; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05); transform: translateY(-2px); }
+        .item-card .img-wrapper { height: 10rem; aspect-ratio: 1/1; display: flex; align-items: center; justify-content: center; margin-bottom: 1rem; padding: 0.5rem; overflow: hidden; }
+        .item-card img { max-height: 100%; max-width: 100%; width: auto; height: auto; object-fit: contain; transition: opacity 0.3s ease-in-out; }
+        .item-card .title { font-size: 0.875rem; font-weight: 500; color: #334155; height: 40px; overflow: hidden; }
+        .item-card .card-footer { margin-top: auto; padding-top: 1rem; border-top: 1px solid #f1f5f9; display: flex; justify-content: space-between; align-items: center; }
+        .item-card .price { font-size: 1.125rem; font-weight: 800; color: #020617; }
+        .item-card .add-btn { width: 2.25rem; height: 2.25rem; background: #0f172a; color: white; border-radius: 0.75rem; display: flex; align-items: center; justify-content: center; }
+        .nav-top { background: var(--jt-darker); color: #94a3b8; padding: 8px 30px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; flex justify-content: space-between; align-items: center; z-40; position: relative; display: flex;}
+        .lang-btn { cursor: pointer; transition: color 0.3s; }
+        .lang-active { color: var(--jt-yellow) !important; }
+        .logo-marquee { overflow: hidden; white-space: nowrap; background: #f8fafc; padding: 8px 0; border-bottom: 1px solid #e2e8f0; }
+        .marquee-content { display: inline-block; animation: marquee 30s linear infinite; }
+        .marquee-content span { color: #94a3b8; font-weight: 700; font-size: 11px; margin: 0 30px; text-transform: uppercase; letter-spacing: 1px; }
+        @keyframes marquee { from { transform: translateX(0); } to { transform: translateX(-50%); } }
+        .modal-overlay { background: rgba(15, 23, 42, 0.6); backdrop-filter: blur(4px); }
+        .toast-notification { position: fixed; bottom: 2rem; right: 2rem; background: #0f172a; color: white; padding: 12px 20px; border-radius: 12px; font-size: 13px; font-weight: 600; box-shadow: 0 10px 30px rgba(0,0,0,0.1); z-index: 200; transition: all 0.4s ease; transform: translateY(100px); opacity: 0; }
+        .toast-active { transform: translateY(0); opacity: 1; }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    </style>
+</head>
+<body>
+
+    <div class="page-wrapper">
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <div class="text-2xl font-black tracking-tighter flex items-center cursor-pointer" onclick="setCategory('', null)">
+                    <span class="bg-amber-400 text-slate-950 px-2 py-0.5 rounded-md mr-1.5 shadow-sm">JT</span>
+                    <span class="text-slate-950">MOTORS</span>
+                </div>
+            </div>
+            <nav class="sidebar-menu">
+                <div class="px-5 py-3 text-[11px] font-bold uppercase text-slate-400 tracking-wider">Kategorijas</div>
+                
+                <div class="cat-item" id="cat-main-Bremzes" onclick="toggleSubCats('Bremzes', this)">
+                    <i class="fas fa-compact-disc"></i>
+                    <span data-key="cat-brakes">Bremzes</span>
+                    <i class="fas fa-chevron-down arrow"></i>
+                </div>
+                <div class="sub-cat-list" id="sub-cat-Bremzes"></div>
+
+                <div class="cat-item" id="cat-main-Filtri" onclick="toggleSubCats('Filtri', this)">
+                    <i class="fas fa-filter"></i>
+                    <span data-key="cat-filters">Filtri</span>
+                    <i class="fas fa-chevron-down arrow"></i>
+                </div>
+                <div class="sub-cat-list" id="sub-cat-Filtri"></div>
+
+                <div class="cat-item text-sky-700 font-bold" onclick="toggleExtraCats(this)" id="more-btn">
+                    <i class="fas fa-ellipsis-h"></i>
+                    <span>Vairāk kategoriju</span>
+                    <i class="fas fa-chevron-down arrow ml-auto"></i>
+                </div>
+
+                <div id="extra-categories" class="hidden">
+                    <div class="cat-item" id="cat-main-Amortizācija" onclick="toggleSubCats('Amortizācija ', this)">
+                        <i class="fas fa-arrows-up-down"></i>
+                        <span data-key="cat-suspension">Amortizācija</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-Amortizācija"></div>
+
+                    <div class="cat-item" id="cat-main-Stūre" onclick="toggleSubCats('Stūre', this)">
+                        <i class="fas fa-steering-wheel"></i>
+                        <span data-key="cat-steering">Stūre</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-Stūre"></div>
+
+                    <div class="cat-item" id="cat-main-LoguTiritaji" onclick="toggleSubCats('LoguTiritaji', this)">
+                        <i class="fas fa-windshield"></i>
+                        <span data-key="cat-wipers">Logu tīrītāji</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-LoguTiritaji"></div>
+
+                    <div class="cat-item" id="cat-main-Dzinējs" onclick="toggleSubCats('Dzinējs', this)">
+                        <i class="fas fa-engine"></i>
+                        <span data-key="cat-engine">Dzinējs</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-Dzinējs"></div>
+
+                    <div class="cat-item" id="cat-main-Degviela" onclick="toggleSubCats('Degviela', this)">
+                        <i class="fas fa-gas-pump"></i>
+                        <span data-key="cat-fuel">Degviela</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-Degviela"></div>
+
+                    <div class="cat-item" id="cat-main-Izplūde" onclick="toggleSubCats('Izplūde', this)">
+                        <i class="fas fa-wind"></i>
+                        <span data-key="cat-exhaust">Izplūde</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-Izplūde"></div>
+
+                    <div class="cat-item" id="cat-main-Elektroiekārta" onclick="toggleSubCats('Elektroiekārta', this)">
+                        <i class="fas fa-car-battery"></i>
+                        <span data-key="cat-electrics">Elektroiekārta</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-Elektroiekārta"></div>
+
+                    <div class="cat-item" id="cat-main-Dzesēšana" onclick="toggleSubCats('Dzesēšana', this)">
+                        <i class="fas fa-snowflake"></i>
+                        <span data-key="cat-cooling">Dzesēšana</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-Dzesēšana"></div>
+
+                    <div class="cat-item" id="cat-main-Apsilde" onclick="toggleSubCats('Apsilde', this)">
+                        <i class="fas fa-temperature-high"></i>
+                        <span data-key="cat-heating">Apsilde</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-Apsilde"></div>
+
+                    <div class="cat-item" id="cat-main-Transmisija" onclick="toggleSubCats('Transmisija', this)">
+                        <i class="fas fa-cogs"></i>
+                        <span data-key="cat-transmission">Transmisija</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-Transmisija"></div>
+
+                    <div class="cat-item" id="cat-main-Virsbūve" onclick="toggleSubCats('Virsbūve', this)">
+                        <i class="fas fa-car-side"></i>
+                        <span data-key="cat-body">Virsbūve</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-Virsbūve"></div>
+
+                    <div class="cat-item" id="cat-main-Apgaismojums" onclick="toggleSubCats('Apgaismojums', this)">
+                        <i class="fas fa-lightbulb"></i>
+                        <span data-key="cat-lighting">Apgaismojums</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-Apgaismojums"></div>
+
+                    <div class="cat-item" id="cat-main-Eļļas" onclick="toggleSubCats('Eļļas', this)">
+                        <i class="fas fa-oil-can"></i>
+                        <span data-key="cat-oil">Eļļas un šķidrumi</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-Eļļas"></div>
+
+                    <div class="cat-item" id="cat-main-Piederumi" onclick="toggleSubCats('Piederumi', this)">
+                        <i class="fas fa-box-open"></i>
+                        <span data-key="cat-accessories">Auto piederumi</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-Piederumi"></div>
+
+                    <div class="cat-item" id="cat-main-Instrumenti" onclick="toggleSubCats('Instrumenti', this)">
+                        <i class="fas fa-screwdriver"></i>
+                        <span data-key="cat-tools">Instrumenti</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-Instrumenti"></div>
+
+                    <div class="cat-item" id="cat-main-Riepas" onclick="toggleSubCats('Riepas', this)">
+                        <i class="fas fa-life-ring"></i>
+                        <span data-key="cat-tires">Riepas</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-Riepas"></div>
+
+                    <div class="cat-item" id="cat-main-Velo" onclick="toggleSubCats('Velo', this)">
+                        <i class="fas fa-bicycle"></i>
+                        <span data-key="cat-velo">Velo preces</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-Velo"></div>
+
+                    <div class="cat-item" id="cat-main-Laivas" onclick="toggleSubCats('Laivas', this)">
+                        <i class="fas fa-anchor"></i>
+                        <span data-key="cat-marine">Laivu aprīkojums</span>
+                        <i class="fas fa-chevron-down arrow"></i>
+                    </div>
+                    <div class="sub-cat-list" id="sub-cat-Laivas"></div>
+                </div>
+
+                <div class="border-t border-slate-100 my-4"></div>
+                <div class="cat-item"><i class="fas fa-user-circle"></i><span data-key="login">Pieslēgties</span></div>
+                <div class="cat-item"><i class="fas fa-envelope"></i><span data-key="contacts">Kontakti</span><i class="fas fa-chevron-right arrow"></i></div>
+            </nav>
+            <div class="p-4 border-t border-slate-100 text-center text-slate-400 text-[10px]" id="admin-trigger">
+                &copy; 2026 JT MOTORS.
+            </div>
+        </aside>
+
+        <main class="main-content">
+            <div class="nav-top">
+                <div class="flex gap-6 items-center">
+                    <span class="flex items-center gap-1.5"><i class="fas fa-truck text-amber-400"></i> <span data-key="free-shipping">Bezmaksas piegāde virs 50€</span></span>
+                    <span class="hidden md:flex items-center gap-1.5"><i class="fas fa-check-circle text-amber-400"></i> <span data-key="original-parts">Oriģinālas rezerves daļas</span></span>
+                </div>
+                <div class="flex gap-5 items-center ml-auto">
+                    <a href="tel:+37120000000" class="hover:text-white transition flex items-center gap-1.5"><i class="fas fa-phone-alt"></i> +371 2000 0000</a>
+                    <div class="flex gap-1.5 items-center">
+                        <span onclick="changeLanguage('lv')" id="lang-lv" class="lang-btn lang-active">LV</span>
+                        <span class="text-slate-700">|</span>
+                        <span onclick="changeLanguage('en')" id="lang-en" class="lang-btn">EN</span>
+                    </div>
+                </div>
+            </div>
+
+            <header class="main-header">
+                <div class="search-wrapper">
+                    <i class="fas fa-search search-icon"></i>
+                    <input type="text" id="main-search" oninput="filterProducts()" data-placeholder="search-placeholder" placeholder="Meklēt detaļu, kodu vai auto marku..." class="search-input">
+                </div>
+                <div class="ml-auto flex items-center gap-4">
+                    <button class="bg-slate-900 text-white px-5 py-2.5 rounded-full text-xs font-bold uppercase tracking-wide hover:bg-[#0284c7] transition flex items-center gap-2">
+                        <i class="fas fa-fingerprint text-amber-400"></i> Meklēt pēc VIN
+                    </button>
+                    <div class="relative cursor-pointer group p-2" onclick="toggleCart()">
+                        <i class="fas fa-shopping-cart text-xl text-slate-600 group-hover:text-[#0284c7] transition"></i>
+                        <span id="cart-badge" class="absolute -top-1 -right-1 bg-[#0284c7] text-white text-[10px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+                    </div>
+                </div>
+            </header>
+
+            <div class="logo-marquee">
+                <div class="marquee-content">
+                    <span>BMW</span><span>Audi</span><span>Mercedes-Benz</span><span>Volvo</span><span>Volkswagen</span><span>Toyota</span><span>Lexus</span><span>Porsche</span><span>BMW</span><span>Audi</span><span>Mercedes-Benz</span><span>Volvo</span><span>Volkswagen</span><span>Toyota</span><span>Lexus</span><span>Porsche</span>
+                </div>
+            </div>
+
+            <div class="product-area">
+                <div class="flex justify-between items-center mb-8 pb-4 border-b border-slate-200">
+                    <div>
+                        <h2 id="cat-title" class="text-3xl font-extrabold text-slate-950 tracking-tight" data-key="all-offers">Viss Piedāvājums</h2>
+                        <p class="text-slate-500 text-xs mt-1">Premium kvalitātes auto rezerves daļas</p>
+                    </div>
+                </div>
+                <div id="product-list" class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-6"></div>
+            </div>
+        </main>
+    </div>
+
+    <div id="toast" class="toast-notification">Pievienots grozam!</div>
+
+    <div id="product-modal" class="fixed inset-0 z-[100] modal-overlay hidden flex items-center justify-center p-4">
+        <div class="bg-white w-full max-w-4xl rounded-3xl overflow-hidden shadow-2xl flex flex-col md:flex-row relative">
+            <button onclick="closeProduct()" class="absolute top-5 right-5 w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center hover:bg-slate-200 z-10 text-slate-500"><i class="fas fa-times"></i></button>
+            <div class="md:w-1/2 bg-slate-50 p-10 flex items-center justify-center">
+                <img id="modal-img" src="" class="max-h-[300px] object-contain transition-opacity duration-300" style="opacity: 0;" onload="this.style.opacity=1">
+            </div>
+            <div class="md:w-1/2 p-10 flex flex-col">
+                <span id="modal-code" class="text-[10px] font-bold text-[#0284c7] bg-sky-50 px-3 py-1 rounded-full w-fit uppercase tracking-wider"></span>
+                <h2 id="modal-title" class="text-2xl font-extrabold text-slate-950 mt-3 leading-tight"></h2>
+                <div class="flex-grow py-6 text-sm text-slate-600" data-key="quality-desc">Augstākās kvalitātes sertificēta rezerves daļa.</div>
+                <div class="flex items-center justify-between border-t pt-6 mt-auto"><span id="modal-price" class="text-3xl font-extrabold text-slate-950"></span><button id="modal-add-btn" class="bg-slate-950 text-white px-7 py-3.5 rounded-2xl font-bold uppercase text-xs hover:bg-[#0284c7] transition-all" data-key="add-cart">Pievienot Grozam</button></div>
+            </div>
+        </div>
+    </div>
+
+    <div id="cart-panel" class="fixed inset-0 bg-slate-950/40 backdrop-blur-sm z-[100] hidden flex justify-end">
+        <div class="bg-white w-full max-w-md p-8 shadow-2xl flex flex-col overflow-y-auto">
+            <div class="flex justify-between items-center mb-8 shrink-0"><h2 class="text-xl font-extrabold text-slate-950 uppercase" data-key="cart-title">Grozs</h2><button onclick="toggleCart()" class="w-9 h-9 bg-slate-100 rounded-full flex items-center justify-center text-slate-500"><i class="fas fa-times"></i></button></div>
+            <div id="cart-content" class="space-y-4 mb-8 border-b border-slate-100 pb-6 flex-grow"></div>
+            <div class="pt-6 mt-auto border-t border-slate-100">
+                <div class="flex justify-between mb-5 items-end"><span class="font-bold text-slate-500 uppercase text-xs" data-key="total">Kopā:</span><span id="cart-total" class="text-3xl font-extrabold text-slate-950">0.00€</span></div>
+                <button id="pay-btn" onclick="processPayment()" class="w-full bg-slate-950 text-white py-5 rounded-2xl font-bold uppercase text-xs tracking-wider flex items-center justify-center gap-3 hover:bg-[#0284c7] transition">
+                    <span data-key="pay-now">Noformēt pasūtījumu</span><div id="pay-spinner" class="payment-loader hidden border-2 border-white border-t-transparent rounded-full w-4 h-4 animate-spin"></div>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-portal-ui" class="fixed inset-0 bg-white z-[200] hidden overflow-y-auto p-10 text-slate-900">
+        <div class="max-w-3xl mx-auto">
+            <div class="flex justify-between items-center mb-10"><h2 class="text-3xl font-black">ADMIN</h2><button onclick="document.getElementById('admin-portal-ui').style.display='none'" class="text-slate-400"><i class="fas fa-times fa-2x"></i></button></div>
+            <div id="admin-login-box" class="max-w-sm mx-auto bg-slate-50 p-10 rounded-3xl border"><input type="password" id="adm-pass" placeholder="Parole" class="w-full p-3 border rounded-xl mb-4"><button onclick="adminLogin()" class="w-full bg-slate-950 text-white p-3 rounded-xl font-bold">Ienākt</button></div>
+            <div id="admin-dashboard" class="hidden"><input type="text" id="adm-name" placeholder="Nosaukums" class="w-full p-3 border rounded-xl mb-3"><input type="number" id="adm-price" placeholder="Cena" class="w-full p-3 border rounded-xl mb-3"><input type="text" id="adm-cat" placeholder="Kategorija" class="w-full p-3 border rounded-xl mb-3"><button onclick="adminSaveProduct()" class="w-full bg-[#0284c7] text-white p-3 rounded-xl font-bold">Pievienot</button><div id="adm-list" class="mt-8 space-y-2 text-sm"></div></div>
+        </div>
+    </div>
+
+    <script>
+        const translations = {
+            lv: { "free-shipping": "Bezmaksas piegāde virs 50€", "original-parts": "Oriģinālas rezerves daļas", "search-placeholder": "Meklēt detaļu, kodu vai auto marku...", "cat-brakes": "Bremzes", "cat-filters": "Filtri", "cat-suspension": "Amortizācija", "cat-steering": "Stūre", "cat-wipers": "Logu tīrītāji", "cat-engine": "Dzinējs", "cat-fuel": "Degviela", "cat-exhaust": "Izplūde", "cat-electrics": "Elektroiekārta", "cat-cooling": "Dzesēšana", "cat-heating": "Apsilde", "cat-transmission": "Transmisija un piedziņa", "cat-body": "Virsbūve un salons", "cat-lighting": "Apgaismojums", "cat-oil": "Eļļas un šķidrumi", "cat-accessories": "Auto piederumi", "cat-tools": "Instrumenti", "cat-tires": "Riepas", "cat-velo": "Velo preces", "cat-marine": "Laivu aprīkojums", "all-offers": "Viss Piedāvājums", "login": "Pieslēgties", "contacts": "Kontakti", "quality-desc": "Augstākās kvalitātes sertificēta rezerves daļa.", "add-cart": "Pievienot Grozam", "cart-title": "Grozs", "total": "Kopā:", "pay-now": "Noformēt pasūtījumu", "alert-success": "Pasūtījums pieņemts!", "vin-help": "Meklēt pēc VIN" },
+            en: { "free-shipping": "Free shipping over 50€", "original-parts": "Original spare parts", "search-placeholder": "Search part, code or car make...", "cat-brakes": "Brakes", "cat-filters": "Filters", "cat-suspension": "Suspension", "cat-steering": "Steering", "cat-wipers": "Wipers", "cat-engine": "Engine", "cat-fuel": "Fuel", "cat-exhaust": "Exhaust", "cat-electrics": "Electrics", "cat-cooling": "Cooling", "cat-heating": "Heating", "cat-transmission": "Transmission", "cat-body": "Body & Interior", "cat-lighting": "Lighting", "cat-oil": "Oils & Fluids", "cat-accessories": "Car Accessories", "cat-tools": "Tools", "cat-tires": "Tires", "cat-velo": "Velo", "cat-marine": "Marine", "all-offers": "All Offers", "login": "Login", "contacts": "Contacts", "quality-desc": "Top quality certified spare part.", "add-cart": "Add to Cart", "cart-title": "Cart", "total": "Total:", "pay-now": "Checkout", "alert-success": "Order placed!", "vin-help": "Search by VIN" }
+        };
+
+        const brakeSubCategories = [
+            { n: "Bremžu diski", i: "fa-compact-disc" }, { n: "Bremžu kluči", i: "fa-bars" }, { n: "Bremžu suports", i: "fa-toolbox" }, { n: "Bremžu disku aizsargi", i: "fa-shield-halved" }, { n: "Disku bremžu piederumi", i: "fa-plus-circle" }, { n: "Nodiluma devēji", i: "fa-microchip" }, { n: "Bremžu suporta detaļas", i: "fa-cogs" }, { n: "Rokas bremzes daļas", i: "fa-hand-paper" }, { n: "Bremžu trumulis", i: "fa-drum" }, { n: "Bremžu loki", i: "fa-archway" }, { n: "Riteņa bremžu cilindri", i: "fa-circle-dot" }, { n: "Trumuļu bremžu piederumi", i: "fa-screwdriver-wrench" }, { n: "ABS sensori un gredzeni", i: "fa-wave-square" }, { n: "Galvenais bremžu cilindrs", i: "fa-faucet" }, { n: "Bremžu šļūtenes", i: "fa-faucet-drip" }, { n: "Rokas bremzes troses", i: "fa-link" }, { n: "Bremžu cauruļvadu uzgaļi", i: "fa-circle-nodes" }, { n: "Bremžu pastiprinātāji", i: "fa-angles-up" }, { n: "Bremžu spēka regulators", i: "fa-sliders" }, { n: "Bremžu cauruļvadi", i: "fa-grip-lines" }, { n: "Bremžu vakuumsūknis", i: "fa-wind" }
+        ];
+
+        const filterSubCategories = [
+            { n: "Eļļas filtri", i: "fa-oil-can" }, { n: "Gaisa filtri", i: "fa-wind" }, { n: "Salona filtri", i: "fa-fan" }, { n: "Degvielas filtri", i: "fa-gas-pump" }, { n: "Filtru komplekts", i: "fa-layer-group" }, { n: "Hidrauliskais filtrs", i: "fa-water" }, { n: "Dzesēšanas šķidruma filtrs", i: "fa-snowflake" }, { n: "Stūres iekārtas filtrs", i: "fa-dharmachakra" }
+        ];
+
+        const suspensionSubCategories = [
+            { n: "Amortizatori", i: "fa-arrows-left-right" }, { n: "Atsperes", i: "fa-infinity" }, { n: "Amortizatora statnes", i: "fa-cog" }, { n: "Amortizatoru putekļu sargi", i: "fa-shield" }, { n: "Riteņu gultņi", i: "fa-circle-notch" }, { n: "Riteņa rumbas", i: "fa-dharmachakra" }, { n: "Piekares sviras", i: "fa-link" }, { n: "Disku skrūves un uzgriežņi", i: "fa-bolt" }, { n: "Stūres svira", i: "fa-shuttle-space" }, { n: "Stabilizatora atsaites", i: "fa-grip-lines-vertical" }, { n: "Stabilizatori", i: "fa-ellipsis-h" }, { n: "Atsperes atbalstplāksne", i: "fa-ring" }, { n: "Lodbalsti", i: "fa-dot-circle" }, { n: "Stabilizatora bukses", i: "fa-record-vinyl" }, { n: "Pneimopiekare", i: "fa-faucet" }, { n: "Grozāmass statnes", i: "fa-wrench" }, { n: "Lāgu atsperes", i: "fa-water" }, { n: "Grozāmass", i: "fa-vector-square" }, { n: "Tilta piekares remkomplekti", i: "fa-tools" }, { n: "Klīrensa regulēšana", i: "fa-arrows-alt-v" }, { n: "Riteņu starplika", i: "fa-compact-disc" }, { n: "Piekare, Riteņu gultņa korpuss", i: "fa-archive" }, { n: "Tilta sijas remkomplekti", i: "fa-toolbox" }
+        ];
+
+        const steeringSubCategories = [
+            { n: "Šarnīri", i: "fa-circle-dot" }, { n: "Stūres pirksti", i: "fa-grip-lines-vertical" }, { n: "Stūres mehānismi", i: "fa-gears" }, { n: "Stūres pastiprinātāja sūkņi", i: "fa-oil-can" }, { n: "Stūres mehānisma putekļu sargi", i: "fa-shield" }, { n: "Stūres mehānisma pārvads", i: "fa-link" }, { n: "Stūres sistēmas šļūtenes", i: "fa-faucet-drip" }, { n: "Stūres statnes", i: "fa-cog" }, { n: "Stūres vadības amortizators", i: "fa-arrows-left-right" }, { n: "Eļļas izplešanās tvertne", i: "fa-flask" }, { n: "Iekšējā slēdzene", i: "fa-lock" }, { n: "Stūres mehānisma piekare", i: "fa-toolbox" }
+        ];
+
+        const wiperSubCategories = [
+            { n: "Logu slotiņas", i: "fa-lines-leaning" }, { n: "Stiklu tīrītāju motori", i: "fa-gears" }, { n: "Stiklu šķidruma sūkņi", i: "fa-faucet-drip" }, { n: "Stiklu tīrītāju mehānisms", i: "fa-link" }, { n: "Lukturu tīrīšanas sistēma", i: "fa-lightbulb" }, { n: "Stikla tīrītāju sviras", i: "fa-wrench" }, { n: "Smidzinātāja sprauslas", i: "fa-shower" }, { n: "Logu šķidruma tvertnes", i: "fa-vial-circle-check" }
+        ];
+
+        const engineSubCategories = [
+            { n: "Zobsiksnas komplekti", i: "fa-gear" }, { n: "Dzinēja blīves un blīvslēgi", i: "fa-layer-group" }, { n: "Motora ķēele komplekti", i: "fa-link" }, { n: "Droseles", i: "fa-sliders" }, { n: "Siksnas un ruļļi", i: "fa-circle-dot" }, { n: "Spriegotājrullītis, skriemeļi, demferi", i: "fa-dharmachakra" }, { n: "Ķīļsiksnas komplekts", i: "fa-infinity" }, { n: "Turbīnas", i: "fa-fan" }, { n: "Turbīnas gaisa caurule", i: "fa-hose" }, { n: "Turbīnu daļas, remkomplekti", i: "fa-toolbox" }, { n: "Cilindra galva un daļas", i: "fa-microchip" }, { n: "Kloķa-klaņa mehānisms", i: "fa-server" }, { n: "Eļļošana", i: "fa-oil-can" }, { n: "Izplūdes gāzu attīrīšanas sistēma", i: "fa-smog" }, { n: "Ieplūdes kolektori", i: "fa-wind" }, { n: "Gaisa padeves caurules", i: "fa-water" }, { n: "Motora spilvens", i: "fa-square-full" }, { n: "Akseleratora trose, piederumi", i: "fa-ellipsis-h" }, { n: "Brīvgaitas regulēšana", i: "fa-bolt" }
+        ];
+
+        const fuelSubCategories = [
+            { n: "Degvielas sūkņi", i: "fa-gas-pump" }, { n: "Degvielas sprauslas", i: "fa-shower" }, { n: "Degvielas padeves ierīce", i: "fa-truck-field" }, { n: "Augstspiediena sūkņi (HPFP)", i: "fa-gauge-high" }, { n: "Degvielas šļūtenes", i: "fa-grip-lines" }, { n: "Degvielas caurules", i: "fa-minus" }, { n: "Degvielas spiediena regulators", i: "fa-sliders" }, { n: "Degvielas tvertnes līmeņa sensors", i: "fa-ruler-vertical" }, { n: "Degvielas tvertne", i: "fa-box-archive" }, { n: "Degvielas tvertnes vāciņš", i: "fa-circle-dot" }, { n: "Degvielas iesmidzināšanas sūknis", i: "fa-gears" }, { n: "Iesmidzināšanas sistēmas piederumi", i: "fa-toolbox" }, { n: "Common Rail sistēmas daļas", i: "fa-microchip" }, { n: "Iesmidzināšanas vārsts", i: "fa-vial" }, { n: "Landa zonde", i: "fa-wave-square" }, { n: "Gaisa masas mērītājs", i: "fa-wind" }, { n: "Kvēlsveces / Aizdedzes sveces", i: "fa-bolt" }
+        ];
+
+        const exhaustSubCategories = [
+            { n: "Izpūtēji", i: "fa-minus" }, { n: "Izpūtēja caurules", i: "fa-grip-lines" }, { n: "Katalizatori", i: "fa-box-tissue" }, { n: "Izplūdes kolektori", i: "fa-diagram-project" }, { n: "Kvēpu filtri (DPF)", i: "fa-filter" }, { n: "Izplūdes blīves", i: "fa-ring" }, { n: "Lambda zondes", i: "fa-microchip" }, { n: "Montāžas elementi", i: "fa-toolbox" }, { n: "Izplūdes sistēmas sensori", i: "fa-wave-square" }, { n: "Izplūdes vārsts", i: "fa-toggle-on" }
+        ];
+
+        const electricSubCategories = [
+            { n: "Akumulatori", i: "fa-car-battery" }, { n: "Ģeneratori", i: "fa-car-side" }, { n: "Ģeneratora rullis", i: "fa-circle-notch" }, { n: "Sensori", i: "fa-microchip" }, { n: "Aizdedzes sveces", i: "fa-bolt" }, { n: "Starteri", i: "fa-gear" }, { n: "Kvēlsveces", i: "fa-fire-alt" }, { n: "Aizdedzes spoles", i: "fa-plug" }, { n: "Slēdži", i: "fa-toggle-on" }, { n: "Sveču vadi", i: "fa-wave-square" }, { n: "Aizdedzes sadalītājs", i: "fa-dharmachakra" }, { n: "Ģeneratora sastāvdaļas", i: "fa-puzzle-piece" }, { n: "Sprieguma regulators", i: "fa-sliders-h" }, { n: "Startera sastāvdaļas", i: "fa-tools" }, { n: "Vadības bloki", i: "fa-server" }, { n: "Startera ievilcējrelejs", i: "fa-magnet" }, { n: "Skaņas signāls, taure", i: "fa-bullhorn" }, { n: "Vadu komplekts", i: "fa-project-diagram" }, { n: "Gaisa spilvenu sistēma", i: "fa-life-ring" }
+        ];
+
+        const coolingSubCategories = [
+            { n: "Ūdens sūkņi", i: "fa-faucet-drip" }, { n: "Dzesēšanas sistēmas blīves", i: "fa-ring" }, { n: "Ūdenssūkņa piedziņas skriemelis", i: "fa-dharmachakra" }, { n: "Radiatori", i: "fa-columns" }, { n: "Dzesēšanas šķidruma caurules", i: "fa-hose" }, { n: "Ventilatori", i: "fa-fan" }, { n: "Interkūleri", i: "fa-braille" }, { n: "Termostati", i: "fa-temperature-low" }, { n: "Kompensācijas tvertnes", i: "fa-flask" }, { n: "Antifrīzs", i: "fa-oil-can" }, { n: "Dzesēšanas slēdži un sensori", i: "fa-microchip" }, { n: "Radiatora stiprināšanas detaļas", i: "fa-puzzle-piece" }, { n: "Eļļas radiators", i: "fa-oil-can" }, { n: "Dzesēšanas šķidruma flancis", i: "fa-circle-notch" }
+        ];
+
+        const heatingSubCategories = [
+            { n: "Kondicioniera kompresori", i: "fa-compact-disc" }, { n: "Kondicioniera kondensatori", i: "fa-braille" }, { n: "Sausinātājs", i: "fa-prescription-bottle" }, { n: "Salona ventilatori", i: "fa-fan" }, { n: "Salona apsildes radiatori", i: "fa-columns" }, { n: "Apsildes šļaukas", i: "fa-hose" }, { n: "Autonomā apsildes sistēma", i: "fa-box" }, { n: "Iztvaikotāji", i: "fa-layer-group" }, { n: "Kondicioniera šļaukas un caurules", i: "fa-grip-lines" }, { n: "Gaisa kondicionēšanas relejs", i: "fa-toggle-on" }, { n: "Vadības elementi", i: "fa-sliders" }, { n: "Temperatūras sensori", i: "fa-microchip" }, { n: "Gaisa kondicionēšanas vārsti", i: "fa-faucet" }, { n: "Regulēšanas vārsti", i: "fa-cog" }
+        ];
+
+        const transmissionSubCategories = [
+            { n: "Sajūga komplekti", i: "fa-compact-disc" }, { n: "Pusasis", i: "fa-arrows-left-right" }, { n: "Spararati", i: "fa-circle-notch" }, { n: "Pusass šarnīru komplekti", i: "fa-toolbox" }, { n: "Pusass putekļu sargi", i: "fa-shield" }, { n: "Atsevišķas sajūga detaļas", i: "fa-puzzle-piece" }, { n: "Eļļas maiņas komplekts", i: "fa-oil-can" }, { n: "Kardāna šarnīrs", i: "fa-link" }, { n: "Transmisijas blīves un blīvslēgi", i: "fa-layer-group" }, { n: "Kardāni", i: "fa-minus" }, { n: "Kardāna krustiņi un gultņi", i: "fa-circle-dot" }, { n: "Sajūga galvenie cilindri", i: "fa-faucet" }, { n: "Troses, sviras un piederumi", i: "fa-ellipsis-h" }, { n: "Ātrumkārbas stiprinājumi", i: "fa-square-full" }, { n: "Automātiskās ātrumkārbas radiators", i: "fa-columns" }, { n: "Tripod rumba", i: "fa-dharmachakra" }, { n: "Pusass skrūves, uzgriežņi", i: "fa-bolt" }, { n: "Ātrumkārbas korpuss", i: "fa-box" }, { n: "Centrējošais gultnis", i: "fa-ring" }, { n: "Spidometra trose", i: "fa-wave-square" }, { n: "Eļļas vācele", i: "fa-fill-drip" }, { n: "Diferenciālis", i: "fa-gears" }
+        ];
+
+        const bodySubCategories = [
+            { n: "Durvju rokturi un slēdzenes", i: "fa-key" }, { n: "Stikla pacelšanas mehānismi", i: "fa-up-down" }, { n: "Gāzes atsperes", i: "fa-arrows-up-down" }, { n: "Bampers", i: "fa-window-minimize" }, { n: "Spārni", i: "fa-car-side" }, { n: "Spoguļi", i: "fa-eye" }, { n: "Paspārni", i: "fa-shield-halved" }, { n: "Interjera daļas", i: "fa-couch" }, { n: "Sliekšņi", i: "fa-minus" }, { n: "Priekšējās restes", i: "fa-grip-lines" }, { n: "Durvis, komponenti", i: "fa-door-open" }, { n: "Motora pārsegs, komponenti", i: "fa-car" }, { n: "Palīgrāmis", i: "fa-table-columns" }, { n: "Bagāžas nodalījuma pārsegs", i: "fa-box" }, { n: "Apdares un aizsarguzlikas", i: "fa-fill" }, { n: "Virsbūves grīda", i: "fa-layer-group" }, { n: "Iestiklošanas blīves", i: "fa-ring" }, { n: "Piekabes āķa bampera uzlika", i: "fa-trailer" }, { n: "Numura zīmes turētāji", i: "fa-rectangle-list" }, { n: "Motora vāks", i: "fa-square-full" }, { n: "Sēdekļa regulēšanas daļas", i: "fa-sliders" }, { n: "Antena", i: "fa-tower-broadcast" }
+        ];
+
+        const lightingSubCategories = [
+            { n: "Aizmugurējie lukturi", i: "fa-car-rear" }, { n: "Priekšējie lukturi", i: "fa-lightbulb" }, { n: "Pamatluktura komponentes", i: "fa-cogs" }, { n: "Aizmugurējā luktura komponentes", i: "fa-puzzle-piece" }, { n: "Spuldzes", i: "fa-bolt-lightning" }, { n: "Pagrieziena lukturi", i: "fa-location-arrow" }, { n: "Apgaismojuma slēdži", i: "fa-toggle-on" }, { n: "Miglas lukturi", i: "fa-cloud-meatball" }, { n: "Aizmugurējie miglas lukturi", i: "fa-smog" }, { n: "Numurzīmes apgaismojuma lukturi", i: "fa-id-card" }, { n: "Atpakaļgaitas lukturi", i: "fa-rotate-left" }, { n: "LED numurzīmes apgaismojums", i: "fa-bolt" }, { n: "Dienas gaismas lukturi", i: "fa-sun" }, { n: "Papildu bremžu signāla lukturi", i: "fa-stop" }
+        ];
+
+        const oilSubCategories = [
+            { n: "Motoreļļa", i: "fa-oil-can" }, { n: "Kopšana", i: "fa-spray-can-sparkles" }, { n: "Transmisijas eļļa", i: "fa-cog" }, { n: "Hidrauliskā eļļa", i: "fa-water" }, { n: "Smērvielas", i: "fa-pump-soap" }, { n: "Bremžu šķidrums", i: "fa-fill-drip" }, { n: "Stūres pastiprinātāja eļļa", i: "fa-dharmachakra" }, { n: "Dzesēšanas šķidrums", i: "fa-snowflake" }, { n: "Degvielas piedevas", i: "fa-gas-pump" }, { n: "AdBlue", i: "fa-vial-circle-check" }, { n: "Eļļas piedevas", i: "fa-flask" }, { n: "Līmes un hermētiķi", i: "fa-vial" }, { n: "Vējstiklu šķidrums", i: "fa-windshield" }
+        ];
+
+        const accessoriesSubCategories = [
+            { n: "Elektromobiļu lādētāji", i: "fa-plug-circle-bolt" }, { n: "Salona komforts un aizsardzība", i: "fa-couch" }, { n: "Telefona piederumi", i: "fa-mobile-screen-button" }, { n: "Papildu apgaismojums", i: "fa-lightbulb" }, { n: "Piekabes āķis un piederumi", i: "fa-trailer" }, { n: "Auto paklājiņi", i: "fa-rug" }, { n: "Bagāžnieka paklājiņi", i: "fa-suitcase" }, { n: "Preces ziemai", i: "fa-snowflake" }, { n: "Sniega ķēdes un zeķes", i: "fa-link" }, { n: "Akumulatoru lādētāji", i: "fa-battery-three-quarters" }, { n: "Akumulatora būsteri", i: "fa-bolt" }, { n: "Starta vadi", i: "fa-cable-car" }, { n: "Parkošanās sensori (universālie)", i: "fa-bullseye" }, { n: "Atpakaļskata kameras", i: "fa-video" }, { n: "Jumta šķērsstieņi un piederumi", i: "fa-bars" }, { n: "Jumta kastes un piederumi", i: "fa-box-open" }, { n: "Velosipēdu turētāji", i: "fa-bicycle" }, { n: "Videoreģistratori", i: "fa-camera" }, { n: "Sprieguma pārveinvertori", i: "fa-bolt-lightning" }, { n: "Pārklāji", i: "fa-car" }, { n: "Dekoratīvās disku uzlikas", i: "fa-compact-disc" }, { n: "Baterijas", i: "fa-battery-full" }, { n: "Citi piederumi", i: "fa-box" }
+        ];
+
+        const toolSubCategories = [
+            { n: "Rokas instrumenti", i: "fa-hammer" },
+            { n: "Transportlīdzekļu remonta instrumenti", i: "fa-car-repair" },
+            { n: "Elektriskie instrumenti", i: "fa-plug" },
+            { n: "Akumulatora instrumenti", i: "fa-battery-bolt" },
+            { n: "Pneimatiskie instrumenti", i: "fa-wind" }
+        ];
+
+        const tireSubCategories = [
+            { n: "Ziemas riepas", i: "fa-snowflake" },
+            { n: "Vasaras riepas", i: "fa-sun" },
+            { n: "Vissezonas riepas", i: "fa-cloud-sun-rain" }
+        ];
+
+        const veloSubCategories = [
+            { n: "Velosipēdu rati un riepas", i: "fa-circle-notch" },
+            { n: "Velosipēdu bremžu daļas", i: "fa-dharmachakra" },
+            { n: "Velosipēdu sēdekļi un stūres", i: "fa-bicycle" },
+            { n: "Velosipēda ķēdes piedziņa", i: "fa-link" },
+            { n: "Velosipēdu piederumi", i: "fa-bag-shopping" },
+            { n: "Velosipēdu gaisa pumpji", i: "fa-wind" },
+            { n: "Velosipēdu instrumenti", i: "fa-screwdriver-wrench" },
+            { n: "Velosipēdu kopšanas līredzekļi", i: "fa-spray-can" },
+            { n: "Velosipēdi", i: "fa-bicycle" }
+        ];
+
+        // JAUNĀ SADAĻA NO BILDES
+        const laivuAprikojumsSubCategories = [
+            { n: "Glābšanas vestes", i: "fa-life-ring" },
+            { n: "Kompasi un navigācija", i: "fa-compass" },
+            { n: "Klāja aprīkojums", i: "fa-anchor" },
+            { n: "Burāšanas aprīkojums un takelāža", i: "fa-wind" },
+            { n: "Fenderi un bojas", i: "fa-circle" },
+            { n: "Laivas dzinējs", i: "fa-engine" },
+            { n: "Tauvošanās", i: "fa-link" },
+            { n: "Elektronika", i: "fa-microchip" },
+            { n: "Laivas stūres sistēma", i: "fa-dharmachakra" },
+            { n: "Barometri un pulksteņi", i: "fa-clock" },
+            { n: "Karogi", i: "fa-flag" },
+            { n: "Sūkņi, caurules un santehnika", i: "fa-faucet" }
+        ];
+
+        let currentLang = localStorage.getItem('jt_lang') || 'lv';
+        function changeLanguage(lang) {
+            currentLang = lang; localStorage.setItem('jt_lang', lang);
+            document.getElementById('lang-lv').classList.toggle('lang-active', lang === 'lv');
+            document.getElementById('lang-en').classList.toggle('lang-active', lang === 'en');
+            document.querySelectorAll('[data-key]').forEach(el => { const key = el.getAttribute('data-key'); if(translations[lang][key]) el.innerText = translations[lang][key]; });
+            document.querySelectorAll('[data-placeholder]').forEach(el => { const key = el.getAttribute('data-placeholder'); if(translations[lang][key]) el.placeholder = translations[lang][key]; });
+        }
+
+        const firebaseConfig = { apiKey: "AIzaSyBK20atH4pmEORbuHLCTAXaSCPUBfz9190", databaseURL: "https://jtc-motors-default-rtdb.europe-west1.firebasedatabase.app" };
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+        let cart = [], activeCategory = "", activeSubCategory = "";
+        let products = {};
+
+        db.ref('store_items').on('value', s => { const data = s.val(); if(data) products = {...data}; filterProducts(); });
+        document.getElementById('admin-trigger').addEventListener('click', () => { document.getElementById('admin-portal-ui').style.display = 'block'; });
+
+        function toggleExtraCats(btn) {
+            const extraBox = document.getElementById('extra-categories');
+            const arrow = btn.querySelector('.arrow');
+            if (extraBox.classList.contains('hidden')) {
+                extraBox.classList.remove('hidden');
+                arrow.classList.replace('fa-chevron-down', 'fa-chevron-up');
+            } else {
+                extraBox.classList.add('hidden');
+                arrow.classList.replace('fa-chevron-up', 'fa-chevron-down');
+            }
+        }
+
+        function toggleSubCats(cat, element) {
+            const subListId = 'sub-cat-' + cat;
+            const subList = document.getElementById(subListId);
+            const arrow = element.querySelector('.arrow');
+            document.querySelectorAll('.sub-cat-list.open').forEach(el => { if (el.id !== subListId) { el.classList.remove('open'); const parentId = el.id.replace('sub-cat-', 'cat-main-'); const parentEl = document.getElementById(parentId); if(parentEl) parentEl.querySelector('.arrow').classList.replace('fa-chevron-up', 'fa-chevron-down'); } });
+            subList.classList.toggle('open');
+            if (subList.classList.contains('open')) {
+                if(arrow) arrow.classList.replace('fa-chevron-down', 'fa-chevron-up');
+                if(subList.innerHTML.trim() === "") {
+                    let data = [];
+                    if (cat === 'Bremzes') data = brakeSubCategories;
+                    else if (cat === 'Filtri') data = filterSubCategories;
+                    else if (cat === 'Amortizācija') data = suspensionSubCategories;
+                    else if (cat === 'Stūre') data = steeringSubCategories;
+                    else if (cat === 'LoguTiritaji') data = wiperSubCategories;
+                    else if (cat === 'Dzinējs') data = engineSubCategories;
+                    else if (cat === 'Degviela') data = fuelSubCategories;
+                    else if (cat === 'Izplūde') data = exhaustSubCategories;
+                    else if (cat === 'Elektroiekārta') data = electricSubCategories;
+                    else if (cat === 'Dzesēšana') data = coolingSubCategories;
+                    else if (cat === 'Apsilde') data = heatingSubCategories;
+                    else if (cat === 'Transmisija') data = transmissionSubCategories;
+                    else if (cat === 'Virsbūve') data = bodySubCategories;
+                    else if (cat === 'Apgaismojums') data = lightingSubCategories;
+                    else if (cat === 'Eļļas') data = oilSubCategories;
+                    else if (cat === 'Piederumi') data = accessoriesSubCategories;
+                    else if (cat === 'Instrumenti') data = toolSubCategories;
+                    else if (cat === 'Riepas') data = tireSubCategories;
+                    else if (cat === 'Velo') data = veloSubCategories;
+                    else if (cat === 'Laivas') data = laivuAprikojumsSubCategories; // PIEVIENOTS ŠEIT
+                    
+                    data.forEach(sub => {
+                        const subItem = document.createElement('div');
+                        subItem.className = "sub-cat-item";
+                        subItem.innerHTML = `<i class="fas ${sub.i}"></i><span>${sub.n}</span>`;
+                        subItem.onclick = (e) => { e.stopPropagation(); setSubCategory(cat, sub.n); };
+                        subList.appendChild(subItem);
+                    });
+                }
+                setCategory(cat, element);
+            } else { if(arrow) arrow.classList.replace('fa-chevron-up', 'fa-chevron-down'); if(activeCategory === cat) setCategory('', null); }
+        }
+
+        function setCategory(cat, element) { 
+            activeCategory = cat; activeSubCategory = ""; document.getElementById('main-search').value = ""; 
+            document.querySelectorAll('.cat-item, .sub-cat-item').forEach(el => el.classList.remove('active'));
+            if(!cat || !element) {
+                document.getElementById('cat-title').innerText = translations[currentLang]['all-offers'];
+                document.querySelectorAll('.sub-cat-list.open').forEach(el => el.classList.remove('open'));
+            } else {
+                element.classList.add('active');
+                const keyNode = element.querySelector('[data-key]');
+                const key = keyNode ? keyNode.getAttribute('data-key') : null;
+                document.getElementById('cat-title').innerText = (key && translations[currentLang][key]) ? translations[currentLang][key] : cat;
+            }
+            filterProducts(); 
+        }
+
+        function setSubCategory(mainCat, subCat) {
+            activeCategory = mainCat; activeSubCategory = subCat; document.getElementById('main-search').value = ""; 
+            document.querySelectorAll('.cat-item, .sub-cat-item').forEach(el => el.classList.remove('active'));
+            const mainId = 'cat-main-' + mainCat;
+            const mainEl = document.getElementById(mainId); if(mainEl) mainEl.classList.add('active');
+            
+            document.querySelectorAll('.sub-cat-item span').forEach(span => {
+                if(span.innerText === subCat) span.parentElement.classList.add('active');
+            });
+
+            document.getElementById('cat-title').innerText = subCat;
+            filterProducts();
+        }
+
+        function filterProducts() {
+            const list = document.getElementById('product-list'); const search = document.getElementById('main-search').value.toLowerCase();
+            list.innerHTML = ''; let count = 0;
+            Object.keys(products).forEach(id => {
+                const i = products[id];
+                const matchCat = !activeCategory || i.l === activeCategory;
+                const matchSubCat = !activeSubCategory || i.s === activeSubCategory;
+                const matchSearch = i.n.toLowerCase().includes(search);
+                if(matchCat && matchSubCat && matchSearch) {
+                    count++; 
+                    list.innerHTML += `
+                    <div class="item-card group" onclick="openProduct('${id}')">
+                        <div class="img-wrapper">
+                            <img src="${i.img}" loading="lazy" style="opacity: 0;" onload="this.style.opacity=1">
+                        </div>
+                        <h3 class="title">${i.n}</h3>
+                        <div class="card-footer">
+                            <span class="price">${parseFloat(i.p).toFixed(2)}€</span>
+                            <button class="add-btn"><i class="fas fa-plus text-xs"></i></button>
+                        </div>
+                    </div>`;
+                }
+            });
+            if(count === 0) list.innerHTML = `<div class="col-span-full text-center py-20 text-slate-500 text-sm">Nekas netika atrasts.</div>`;
+        }
+
+        function openProduct(id) {
+            const i = products[id];
+            const modalImg = document.getElementById('modal-img');
+            modalImg.style.opacity = '0';
+            modalImg.src = i.img; 
+            document.getElementById('modal-title').innerText = i.n;
+            document.getElementById('modal-code').innerText = i.e; document.getElementById('modal-price').innerText = parseFloat(i.p).toFixed(2) + '€';
+            document.getElementById('product-modal').classList.remove('hidden');
+            document.getElementById('modal-add-btn').onclick = (e) => { e.stopPropagation(); addToCart(id); closeProduct(); };
+        }
+        function addToCart(id) { cart.push(products[id]); updateCartUI(); showToast("Pievienots grozam!"); }
+        function closeProduct() { document.getElementById('product-modal').classList.add('hidden'); }
+        function toggleCart() { document.getElementById('cart-panel').classList.toggle('hidden'); }
+        function updateCartUI() {
+            const cont = document.getElementById('cart-content'); let total = 0; cont.innerHTML = '';
+            cart.forEach((item, idx) => { total += parseFloat(item.p); cont.innerHTML += `<div class="flex items-center gap-3 bg-slate-50 p-3 rounded-xl border border-slate-100"><img src="${item.img}" class="w-8 h-8 object-contain"><div class="flex-grow font-medium text-xs text-slate-700">${item.n}</div><div class="font-bold text-xs text-slate-950">${parseFloat(item.p).toFixed(2)}€</div><button onclick="cart.splice(${idx},1); updateCartUI();" class="text-slate-400 hover:text-red-500"><i class="fas fa-trash-alt text-xs"></i></button></div>`; });
+            document.getElementById('cart-badge').innerText = cart.length; document.getElementById('cart-total').innerText = total.toFixed(2) + '€';
+        }
+        function showToast(msg) { const t = document.getElementById('toast'); t.innerText = msg; t.classList.add('toast-active'); setTimeout(() => t.classList.remove('toast-active'), 3000); }
+        function processPayment() { if(cart.length === 0) return; const btn = document.getElementById('pay-btn'); const spinner = document.getElementById('pay-spinner'); btn.disabled = true; spinner.classList.remove('hidden'); setTimeout(() => { alert(translations[currentLang]['alert-success']); cart = []; updateCartUI(); toggleCart(); btn.disabled = false; spinner.classList.add('hidden'); }, 2000); }
+        function adminLogin() { if(document.getElementById('adm-pass').value === 'Admin2026') { document.getElementById('admin-login-box').style.display='none'; document.getElementById('admin-dashboard').classList.remove('hidden'); } }
+        function adminSaveProduct() { const n = document.getElementById('adm-name').value; const p = document.getElementById('adm-price').value; const l = document.getElementById('adm-cat').value; db.ref('store_items').push({ n, p: parseFloat(p), l, img: "https://via.placeholder.com/150", e: "CUSTOM" }); }
+        window.onload = () => { changeLanguage(currentLang); updateCartUI(); };
+    </script>
+</body>
+</html>
+
+
