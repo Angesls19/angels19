@@ -8,6 +8,8 @@
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
         import { getFirestore, collection, doc, setDoc, onSnapshot, addDoc, updateDoc, deleteDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+        // PIEVIENOTS: Firebase Auth imports
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-auth.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyDXHcP7eHFyC3agLu5XtoyvESPvM5eqJuQ",
@@ -20,6 +22,41 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
+        const auth = getAuth(app); // PIEVIENOTS: Auth inicializācija
+
+        // --- AUTH LOĢIKA ---
+        window.loginAdmin = async (e) => {
+            e.preventDefault();
+            const email = document.getElementById('admin-email').value;
+            const pass = document.getElementById('admin-password').value;
+            const errorDiv = document.getElementById('login-error');
+            
+            try {
+                await signInWithEmailAndPassword(auth, email, pass);
+                errorDiv.innerText = "";
+            } catch (err) {
+                errorDiv.innerText = "Nepareizs e-pasts vai parole!";
+            }
+        };
+
+        window.logoutAdmin = () => signOut(auth);
+
+        onAuthStateChanged(auth, (user) => {
+            const isAdminPath = window.location.hash === '#admin';
+            if (user) {
+                if (isAdminPath) {
+                    document.getElementById('admin-login-ui').style.display = 'none';
+                    document.getElementById('admin-ui').style.display = 'flex';
+                    refreshAdminSelects(); 
+                    loadHeroToAdmin();
+                }
+            } else {
+                if (isAdminPath) {
+                    document.getElementById('admin-ui').style.display = 'none';
+                    document.getElementById('admin-login-ui').style.display = 'flex';
+                }
+            }
+        });
 
         // --- HERO DATU SINHRONIZĀCIJA ---
         onSnapshot(doc(db, "site_settings", "hero"), (docSnap) => {
@@ -70,7 +107,6 @@
                 }
                 if(link) link.innerText = data.title;
             });
-            if(window.location.hash === '#admin') refreshAdminSelects();
         });
 
         // --- BIEDRU DATU APSTRĀDE ---
@@ -108,7 +144,7 @@
             }
         };
 
-        // --- GALERIJA (SALABOTA LOĢIKA) ---
+        // --- GALERIJA ---
         window.allGalleryDocs = [];
         window.galleryAlbums = [];
         window.currentAlbumFilter = 'Visi';
@@ -135,7 +171,6 @@
             }
 
             gal.innerHTML = '';
-            
             if (window.currentAlbumFilter === 'Visi') {
                 window.galleryAlbums.forEach(albumName => {
                     const albumPics = window.allGalleryDocs.filter(d => (d.album || 'Kopējā') === albumName);
@@ -259,7 +294,7 @@
         .adm-tab:hover, .adm-tab.active { background: #2b2b40; color: white; }
         .adm-tab.active { border-left-color: var(--red); }
         .adm-main { flex: 1; overflow-y: auto; background: #f3f6f9; }
-        .adm-header { background: white; padding: 15px 30px; display: flex; justify-content: flex-end; box-shadow: 0 2px 10px rgba(0,0,0,0.03); }
+        .adm-header { background: white; padding: 15px 30px; display: flex; justify-content: space-between; box-shadow: 0 2px 10px rgba(0,0,0,0.03); align-items: center; }
         .adm-content { padding: 40px; max-width: 900px; margin: 0 auto; }
         .adm-card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 5px 25px rgba(0,0,0,0.04); margin-bottom: 25px; }
         .form-group { margin-bottom: 20px; }
@@ -268,19 +303,35 @@
         .btn-red { background: var(--red); color: white; padding: 12px 25px; border-radius: 30px; border: none; cursor: pointer; font-weight: bold; text-transform: uppercase; display: inline-flex; align-items: center; gap: 8px; transition: 0.3s;}
         .btn-red:hover { background: #8a0808; transform: translateY(-2px); }
         .btn-delete { background: #ff4d4d; color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; }
-        .adm-member-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
 
+        /* PIEVIENOTS: LOGIN UI STILI */
+        #admin-login-ui { display: none; height: 100vh; width: 100%; background: #121212 url('https://i.ibb.co/7dW5Bnxg/53809974633-42674371b5-4k.jpg') center/cover; justify-content: center; align-items: center; position: fixed; z-index: 20000; }
+        .login-card { background: rgba(255,255,255,0.95); padding: 40px; border-radius: 12px; width: 100%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.5); text-align: center; }
+        .login-card h2 { color: var(--red); margin-bottom: 25px; }
+        .login-card input { width: 100%; padding: 12px; margin-bottom: 15px; border: 1px solid #ddd; border-radius: 6px; }
+        #login-error { color: var(--red); font-size: 0.9rem; margin-bottom: 10px; }
+
+        .adm-member-item { display: flex; justify-content: space-between; align-items: center; padding: 10px; border-bottom: 1px solid #eee; }
         #lightbox { display: none; position: fixed; z-index: 20000; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); justify-content: center; align-items: center; }
         #lightbox img { max-width: 90%; max-height: 90%; border-radius: 4px; }
         footer { background: rgba(17,17,17,0.95); color: #888; text-align: center; padding: 30px; }
-        
-        /* QUILL UZLABOJUMI */
         .ql-editor { font-size: 16px; background: white; min-height: 250px; }
-        .ql-toolbar.ql-snow { background: #f3f3f3; border-top-left-radius: 8px; border-top-right-radius: 8px; }
-        #editor-container { border-bottom-left-radius: 8px; border-bottom-right-radius: 8px; background: white; }
     </style>
 </head>
 <body>
+
+<div id="admin-login-ui">
+    <div class="login-card">
+        <h2>Admin Pieteikšanās</h2>
+        <form onsubmit="window.loginAdmin(event)">
+            <div id="login-error"></div>
+            <input type="email" id="admin-email" placeholder="E-pasts" required>
+            <input type="password" id="admin-password" placeholder="Parole" required>
+            <button type="submit" class="btn-red" style="width: 100%;">Pieslēgties</button>
+            <p style="margin-top: 15px;"><a href="#" onclick="window.location.hash=''" style="color:#666; text-decoration:none; font-size:0.8rem;">Atpakaļ uz lapu</a></p>
+        </form>
+    </div>
+</div>
 
 <div id="public-site">
     <header>
@@ -324,19 +375,14 @@
             <div class="container">
                 <div class="content-box edit-target" style="margin-bottom: 30px;">
                     <h2>Kontakti</h2>
-                    
                     <div style="width: 100%; height: 350px; border-radius: 8px; overflow: hidden; margin-bottom: 25px; border: 1px solid #ddd; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2175.760127530663!2d24.246473615967!3d56.95350710626354!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46eec4e47963d767%3A0x6b10079a4059082!2sOzolu%20iela%202A%2C%20Stopi%C5%86u%20novads%2C%20Stopi%C5%86i%2C%20Stopi%C5%86u%20pagasts%2C%20Stopi%C5%86u%20novads%2C%20LV-2130!5e0!3m2!1slv!2slv!4v1683000000000!5m2!1slv!2slv" 
-                                width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
+                        <iframe src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d2175.467389146193!2d24.24921617719602!3d56.95079639855589!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x46eec2fb7692c55b%3A0xe67f9c2d15949d06!2sOzolu%20iela%202A%2C%20Dreili%C5%86i%2C%20Stopi%C5%86u%20pagasts%2C%20LV-2130!5e0!3m2!1slv!2slv!4v1700000000000" width="100%" height="100%" style="border:0;" allowfullscreen="" loading="lazy"></iframe>
                     </div>
-
                     <p style="font-size: 1.2rem; color: #111; margin-bottom: 5px;"><strong>Latvijas Alfa Romeo īpašnieku klubs</strong></p>
                     <p style="margin-bottom: 20px; color: #444;">Ozolu iela 2A, Dreiliņi, Stopiņu nov., LV-2130</p>
-                    
                     <h3 style="margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 10px;">Rekvizīti</h3>
                     <p style="margin-top: 15px;">Reģ. nr.: <strong>40008144659</strong></p>
                     <p>Konts: <strong>LV50HABA0551026201921</strong></p>
-                    
                     <p style="margin-top: 25px;">GSM: Aivars - <a href="tel:+37126615862" class="phone-link" style="font-size: 1.1rem;"><i class="fa-solid fa-phone"></i> +371 26615862</a></p>
                 </div>
 
@@ -378,10 +424,12 @@
         <div class="adm-tab" onclick="switchTab(this, 'adm-edit')"><i class="fa-solid fa-pen-to-square"></i> Lapu Teksti</div>
         <div class="adm-tab" onclick="switchTab(this, 'adm-members')"><i class="fa-solid fa-id-card"></i> Biedru pārvalde</div>
         <div class="adm-tab" onclick="switchTab(this, 'adm-media')"><i class="fa-solid fa-image"></i> Galerija</div>
+        <div class="adm-tab" onclick="window.logoutAdmin()" style="margin-top: auto; color: #ff4d4d;"><i class="fa-solid fa-right-from-bracket"></i> Iziet</div>
     </div>
     <div class="adm-main">
         <div class="adm-header">
-            <button onclick="window.location.hash=''" class="btn-red" style="padding: 10px 20px; font-size: 0.9rem;">Aizvērt un skatīt lapu</button>
+            <h3>Sveicināti, Admin!</h3>
+            <button onclick="window.location.hash=''" class="btn-red" style="padding: 10px 20px; font-size: 0.9rem;">Skatīt lapu</button>
         </div>
         <div class="adm-content">
             <div id="adm-hero" class="adm-section" style="display:block;">
@@ -405,7 +453,6 @@
             <div id="adm-edit" class="adm-section">
                 <div class="adm-card">
                     <h3>Profesionāls satura redaktors</h3>
-                    <p style="font-size: 0.85rem; color: #666; margin-bottom: 15px;">Šeit Jūs varat formatēt tekstu, pievienot saites, attēlus un video tieši lapas saturā.</p>
                     <div class="form-group"><label>Sadaļa:</label><select id="editSelect" onchange="loadEditor()"></select></div>
                     <div class="form-group"><label>Virsraksts:</label><input type="text" id="editTitle"></div>
                     <div id="editor-container" style="height: 400px;"></div>
@@ -450,7 +497,6 @@
 
 <script src="https://cdn.quilljs.com/1.3.6/quill.js"></script>
 <script>
-    // UZLABOTA QUILL KONFIGURĀCIJA
     var quill = new Quill('#editor-container', { 
         theme: 'snow', 
         modules: { 
@@ -460,7 +506,7 @@
                 [{ 'color': [] }, { 'background': [] }],
                 [{ 'align': [] }],
                 [{ 'list': 'ordered'}, { 'list': 'bullet' }],
-                ['link', 'image', 'video'], // Pievienoti attēli un video
+                ['link', 'image', 'video'],
                 ['clean']
             ] 
         } 
@@ -628,8 +674,7 @@
     function checkHash() {
         const isAdmin = window.location.hash === '#admin';
         document.getElementById('public-site').style.display = isAdmin ? 'none' : 'block';
-        document.getElementById('admin-ui').style.display = isAdmin ? 'flex' : 'none'; 
-        if(isAdmin) { refreshAdminSelects(); loadHeroToAdmin(); }
+        // LOGIN UI Rādīšana tiek vadīta caur onAuthStateChanged tagad
     }
     window.onhashchange = checkHash; window.onload = checkHash;
 </script>
